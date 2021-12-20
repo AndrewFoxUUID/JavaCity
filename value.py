@@ -24,6 +24,10 @@ class Value():
             return 'true'
         elif self.val == False and self.type == 'boolean':
             return 'false'
+        elif self.type == 'String':
+            return '"' + str(self.val) + '"'
+        elif self.type == 'char':
+            return "'" + str(self.val) + "'"
         else:
             return str(self.val)
 

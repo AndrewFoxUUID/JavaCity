@@ -146,5 +146,73 @@ javascope = {
                 )
             )
         })
+    ),
+    Variable('Double', 'Object', True, True): Object(
+        name='Double',
+        env=Environment(None, {
+            Variable('Double', 'Double', True, True): MethodSet('Double').add(
+                Method(
+                    Variable('Double', 'Double', True, True),
+                    [
+                        Variable('inner', 'double')
+                    ],
+                    [
+                        Step(['def', Step(['dot', Variable('this', 'Double'), Variable('inner', 'double')], 'Java Internal Method')], 'Java Internal Method'),
+                        Step(['set', Step(['dot', Variable('this', 'Double'), Variable('inner', 'double')], 'Java Internal Method'), Variable('inner', 'double')], 'Java Internal Method')
+                    ]
+                )
+            )
+        })
+    ),
+    Variable('Boolean', 'Object', True, True): Object(
+        name='Boolean',
+        env=Environment(None, {
+            Variable('Boolean', 'Boolean', True, True): MethodSet('Boolean').add(
+                Method(
+                    Variable('Boolean', 'Boolean', True, True),
+                    [
+                        Variable('inner', 'boolean')
+                    ],
+                    [
+                        Step(['def', Step(['dot', Variable('this', 'Boolean'), Variable('inner', 'boolean')], 'Java Internal Method')], 'Java Internal Method'),
+                        Step(['set', Step(['dot', Variable('this', 'Boolean'), Variable('inner', 'boolean')], 'Java Internal Method'), Variable('inner', 'boolean')], 'Java Internal Method')
+                    ]
+                )
+            )
+        })
+    ),
+    Variable('Character', 'Object', True, True): Object(
+        name='Character',
+        env=Environment(None, {
+            Variable('Character', 'Character', True, True): MethodSet('Character').add(
+                Method(
+                    Variable('Character', 'Character', True, True),
+                    [
+                        Variable('inner', 'char')
+                    ],
+                    [
+                        Step(['def', Step(['dot', Variable('this', 'Character'), Variable('inner', 'char')], 'Java Internal Method')], 'Java Internal Method'),
+                        Step(['set', Step(['dot', Variable('this', 'Character'), Variable('inner', 'char')], 'Java Internal Method'), Variable('inner', 'char')], 'Java Internal Method')
+                    ]
+                )
+            )
+        })
+    ),
+    Variable('String', 'Object', True, True): Object(
+        name='String',
+        env=Environment(None, {
+            Variable('String', 'String', True, True): MethodSet('String').add(
+                Method(
+                    Variable('String', 'String', True, True),
+                    [
+                        Variable('inner', 'String')
+                    ],
+                    [
+                        Step(['def', Step(['dot', Variable('this', 'String'), Variable('inner', 'String')], 'Java Internal Method')], 'Java Internal Method'),
+                        Step(['set', Step(['dot', Variable('this', 'String'), Variable('inner', 'String')], 'Java Internal Method'), Variable('inner', 'String')], 'Java Internal Method')
+                    ]
+                )
+            )
+        })
     )
 }
