@@ -1,0 +1,38 @@
+{
+    "base colors": {
+        "code background": "#FFFFFF",
+        "heap background": "#C8C8C8",
+        "stack background": "#646464",
+        "button panel": "#353535",
+        "button background": "#FFFFFF",
+        "button text": "#000000",
+        "highlight": "#DCDCDC"
+    },
+    "lexeme colors": {
+        "variable": "#00009B",
+        "int": "#00FF00",
+        "double": "#00FF00",
+        "String": "#9B3500",
+        "char": "#00FF00",
+        "boolean": "#E19B00",
+        "operator": "#000000",
+        "( block opener": "#000000",
+        "( block closer": "#000000",
+        "[ block opener": "#000000",
+        "[ block closer": "#000000",
+        "{ block opener": "#000000",
+        "{ block closer": "#000000",
+        "whitespace": "#000000",
+        "multiline comment": "#9B9B9B",
+        "singleline comment": "#9B9B9B",
+        "access modifier": "#A000A0",
+        "key word": "#A000A0",
+        "statement opener": "#A000A0",
+        "type": "#A000A0",
+        "var modifier": "#A000A0",
+        "special operator": "#000000",
+        "assignment operator": "#000000",
+        "invalid": "#FF0000",
+        "warning": "#B08801"
+    }
+}
