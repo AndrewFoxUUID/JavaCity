@@ -1,6 +1,6 @@
 The beautiful solution for your all of your Java Town problems<br>
 @author Andrew Fox (class of 2023)<br>
-@version 0.1 (12/19/21)
+@version 0.2 (12/20/21)
 
 This simplified Java interpreter was built in pure Python using Pygame.
 In order to generate an application, run 
