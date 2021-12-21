@@ -5,27 +5,26 @@ from object import Object
 from variable import Variable
 from execute import Executor
 
-class Program():
+class Program(Object):
 
     def __init__(self, name, body, win):
-        self.name = name
+        super().__init__(name, Environment(None, {}))
         self.body = body
         self.win = win
 
-        self.scope = Environment(None, {})
-        self.scope.define(Variable('this', self.name))
-        self.scope[Variable('this', self.name)] = Object(name, Environment(self.scope, {}))
+        self.env.define(Variable('this', name))
+        self.env[Variable('this', name)] = self.env
         self.executor = Executor(self, win)
 
     def start(self, execute=False):
         try:
-            this = self.scope[Variable('this', self.name)]
+            this = self.env[Variable('this', self.type)]
             self.win.message = "executing"
             self.win.heap = {}
             self.win.stack = {}
             self.executor.executing = execute
-            if this.env.contains(Variable("main", "void")):
-                self.executor.execute_method(this.env[Variable("main", "void")][Variable("main", "void"), []], [], Environment(this, {}), True)
+            if this.contains(Variable("main", "void")):
+                self.executor.execute_method(this[Variable("main", "void")][Variable("main", "void"), []], [], Environment(this, {}), True)
             self.executor.finished = True
             self.win.message = "finished"
         except Exception as e:
@@ -42,7 +41,7 @@ class Program():
         self.executor.waiting = False
 
     def __str__(self):
-        s = self.name + "\n\n"
+        s = self.type + "\n\n"
         for line in self.body:
             s += str(line) + "\n"
         return s

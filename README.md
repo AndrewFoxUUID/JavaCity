@@ -17,4 +17,4 @@ a default Java file has been provided, aptly named "Test.java"
 
 to just run the python, run `python javaCity.py`
 
-Note: Arrays, Libraries, and Interfaces are not supported in JavaCity
+Note: Arrays, Libraries, and Interfaces are not supported in JavaCity. It is also single class.

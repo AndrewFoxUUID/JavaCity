@@ -99,7 +99,7 @@ class Value():
         return Value(self.val.__xor__(other.val), 'boolean')
 
     def __index__(self):
-        return Value(self.val.__index__(), 'int')
+        return self.val.__index__()
 
     def __abs__(self):
         return Value(self.val.__abs__(), self.type)

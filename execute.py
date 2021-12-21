@@ -3,7 +3,7 @@ import os, sys
 from value import Value
 from variable import Variable
 from method import *
-from environment import Environment
+from environment import *
 from step import Step
 from object import Object
 from write import *
@@ -19,13 +19,13 @@ class Executor():
         self.executing = False
 
         self.win = win
-        this = program.scope[Variable('this', program.name)]
+        this = program.env[Variable('this', program.type)]
         try:
             for step in self.program.body:
-                self.execute_step(step, this.env, False)
+                self.execute_step(step, this, False)
         except Exception as e:
             tbobject = sys.exc_info()[2]
-            lines = f"Secondary Parsing failed with a{'n' if type(e).__name__[0] in 'aeiouAEIOU' else ''} {type(e).__name__}: {e} {'at line' if type(self.line) == int else 'in'} {self.line}"
+            lines = f"Secondary Parsing failed with a{'n' if type(e).__name__[0] in 'aeiouAEIOU' else ''} {type(e).__name__}: {e} 'at line' {self.line}"
             while tbobject is not None:
                 lines += f"\n    At file '{os.path.basename(tbobject.tb_frame.f_code.co_filename)}' in method '{tbobject.tb_frame.f_code.co_name}' at line {tbobject.tb_lineno}"
                 tbobject = tbobject.tb_next
@@ -40,7 +40,7 @@ class Executor():
             self.win.update()
         self.win.update()
 
-        if isinstance(step, Step) and type(step.line) == int:
+        if isinstance(step, Step) and step.line is not None:
             self.line = step.line
             self.win.highlight_row = self.line
         self.win.update()
@@ -48,150 +48,185 @@ class Executor():
         if self.ret == True:
             return step
         elif isinstance(step, Variable):
-            if step.name == self.program.name:
-                return self.execute_step(scope[Variable('this', self.program.name)], scope, static)
+            if step.name == self.program.type:
+                return self.execute_step(scope[Variable('this', self.program.type)], scope, static)
             else:
                 return self.execute_step(scope[step], scope, static)
         elif isinstance(step, Step):
-            if step[0] == 'defmethod':
+            if step.action == 'defmethod':
                 try:
-                    scope.define(step[1])
-                    scope[step[1]] = MethodSet(step[1])
+                    scope.define(step.var0.name)
+                    scope[step.var0.name] = MethodSet(step.var0.name)
                 except Exception:
                     pass
-                return scope[step[1]].add(Method(step[1], step[2], step[3], step[4], step[5]))
-            elif step[0] == 'def':
-                if type(step[1]) == Variable:
-                    self.win.stack[step[1].name] = 'null'
-                return scope.define(step[1])
-            elif step[0] == 'set':
-                val = self.execute_step(step[2], scope, static)
-                scope[step[1]] = val
-                if type(step[1]) == Variable:
-                    self.win.stack[step[1].name] = str(val)
+                return scope[step.var0.name].add(step.var0)
+            elif step.action == 'def':
+                if type(step.var0) == Variable:
+                    self.win.stack[step.var0.name] = 'null'
+                return scope.define(step.var0)
+            elif step.action == 'set':
+                val = self.execute_step(step.arg, scope, static)
+                scope[step.var0] = val
+                if type(step.var0) == Variable:
+                    self.win.stack[step.var0.name] = str(val)
                 return val
-            elif step[0] == 'eval':
-                term1 = self.execute_step(step[1], scope, static)
-                term2 = self.execute_step(step[3], scope, static)
+            elif step.action == 'eval':
+                term1 = self.execute_step(step.var0, scope, static)
+                term2 = self.execute_step(step.var1, scope, static)
 
-                if step[2] == 'not':
+                if step.arg == 'not':
                     return Value(not term2, 'boolean')
-                elif step[2] == '*':
+                elif step.arg == '*':
                     return term1 * term2
-                elif step[2] == '/':
+                elif step.arg == '/':
                     return term1 / term2
-                elif step[2] == '%':
+                elif step.arg == '%':
                     return term1 % term2
-                elif step[2] == '+':
+                elif step.arg == '+':
                     return term1 + term2
-                elif step[2] == '-':
+                elif step.arg == '-':
                     return term1 - term2
-                elif step[2] == '<':
+                elif step.arg == '<':
                     return term1 < term2
-                elif step[2] == '>':
+                elif step.arg == '>':
                     return term1 > term2
-                elif step[2] == '<=':
+                elif step.arg == '<=':
                     return term1 <= term2
-                elif step[2] == '>=':
+                elif step.arg == '>=':
                     return term1 >= term2
-                elif step[2] == '==':
+                elif step.arg == '==':
                     return term1 == term2
-                elif step[2] == '!=':
+                elif step.arg == '!=':
                     return term1 != term2
-                elif step[2] == 'and':
+                elif step.arg == 'and':
                     return term1 and term2
-                elif step[2] == 'or':
+                elif step.arg == 'or':
                     return term1 or term2
-                elif step[2] == '++':
+                elif step.arg == '++':
                     term1 += Value(1, 'int')
                     return term1
-                elif step[2] == '--':
+                elif step.arg == '--':
                     term1 -= Value(1, 'int')
                     return term1
-            elif step[0] == 'exec':
-                if len(step) == 3:
-                    params = [self.execute_step(param, scope, static) for param in step[2]]
-                    s = step[1]
-                    e = scope
-                    if isinstance(s, Step):
-                        olds = s
-                        s = self.execute_step(s, e, static)
-                        if olds[0] == 'dot':
-                            e = self.execute_step(olds[1], e, static).env
-                    if isinstance(s, MethodSet):
-                        s = s[s.name, params]
-                    if isinstance(s, Method):
-                        return self.execute_method(s, params, e, s.static)
-                    return self.execute_method(e[s, params], params, e, e[s, params].static)
-                elif len(step) == 2:
-                    return self.execute_step(step[1], scope, static)
-            elif step[0] == 'new':
-                addr = self.win.get_next_address()
-                newobj = Object(step[1], Environment(scope, {}), addr)
-                self.win.heap[addr] = newobj
-                newobj.env.define(Variable('this', step[1]))
-                newobj.env[Variable('this', step[1])] = Environment(newobj.env, {})
-                scope = newobj.env[Variable('this', step[1])]
+            elif step.action == 'exec':
+                if step.arg is not None:
+                    params = [self.execute_step(param, scope, static) for param in step.arg]
+                else:
+                    params = []
+                
+                s = step.var0
+                e = scope
+                if isinstance(s, Step):
+                    olds = s
+                    s = self.execute_step(s, e, static)
+                    if olds.action == 'dot':
+                        e = self.execute_step(olds.var0, e, static).env
+                        try:
+                            e = e[Variable('this')]
+                        except UnboundLocalError:
+                            pass
+                if isinstance(s, MethodSet):
+                    s = s[s.name, params]
+                if isinstance(s, Method):
+                    return self.execute_method(s, params, e, s.static)
+                return
+            elif step.action == 'new':
+                if Variable(step.var0) in javascope:
+                    superclassenv = javascope[Variable(step.var0)].copyenv()
+                elif step.var0 == self.program.type:
+                    superclassenv = self.program.copyenv()
+                else:
+                    raise UnboundLocalError(f"Class not found: {step.var0}")
 
-                if step[1] == self.program.name:
-                    for s in self.program.body:
-                        self.execute_step(s, scope, False)
+                addr = self.win.get_next_address()
+                newobj = Object(step.var0, Environment(scope, superclassenv), addr)
+                self.win.heap[addr] = newobj
+                newobj.env.define(Variable('this', step.var0))
+                newobj.env[Variable('this', step.var0)] = Environment(newobj.env, {})
+                scope = newobj.env[Variable('this', step.var0)]
 
                 params = []
-                for param in step[2]:
+                for param in step.arg:
                     params.append(self.execute_step(param, scope, False))
 
-                method = newobj.env[Variable(step[1], step[1]), params]
+                method = newobj.env[Variable(step.var0, step.var0), params]
                 self.execute_method(method, params, scope, False)
 
                 return newobj
-            elif step[0] == 'return':
-                val = self.execute_step(step[1], scope, static)
+            elif step.action == 'return':
+                val = self.execute_step(step.var0, scope, static)
                 self.ret = True
                 return val
-            elif step[0] == 'print':
-                val = self.execute_step(step[1], scope, static)
+            elif step.action == 'print':
+                val = self.execute_step(step.var0, scope, static)
                 self.win.popupdialog = str(val)
                 self.win.popuptype = "message"
                 self.waiting = True
                 return
-            elif step[0] == 'dot':
-                parent = self.execute_step(step[1], scope, static)
+            elif step.action == 'dot':
+                parent = self.execute_step(step.var0, scope, static)
                 try:
-                    child = parent.env[Variable('this')][step[2]]
+                    child = parent.env[Variable('this')][step.arg]
                 except UnboundLocalError:
-                    child = parent.env[step[2]]
+                    child = parent.env[step.arg]
                 return child
-            elif step[0] == 'if':
-                condition = self.execute_step(step[1], scope, static)
+            elif step.action == 'if':
+                condition = self.execute_step(step.var0, scope, static)
                 if condition:
-                    for s in step[2]:
+                    for s in step.arg:
                         val = self.execute_step(s, scope, static)
                         if self.ret == True:
                             return val
-                elif len(step) == 4:
-                    for s in step[3]:
+                elif step.var1 is not None:
+                    for s in step.var1:
                         val = self.execute_step(s, scope, static)
                         if self.ret == True:
                             return val
-            elif step[0] == 'for':
+            elif step.action == 'for':
+                istartval, endcondition, iadvancer = step.arg
                 env = Environment(scope, {})
-                env.define(step[1])
-                env[step[1]] = self.execute_step(step[2], scope, static)
-                while self.execute_step(step[3], env, static):
-                    for s in step[5]:
+                env.define(step.var0)
+                env[step.var0] = self.execute_step(istartval, scope, static)
+                while self.execute_step(endcondition, env, static):
+                    for s in step.var1:
                         val = self.execute_step(s, scope, static)
                         if self.ret == True:
                             return val
-                    env[step[1]] = self.execute_step(step[4], env, static)
+                    env[step.var0] = self.execute_step(iadvancer, env, static)
                 return
-            elif step[0] == 'while':
+            elif step.action == 'while':
                 env = Environment(scope, {})
-                while self.execute_step(step[1], env, static):
-                    for s in step[2]:
+                while self.execute_step(step.var0, env, static):
+                    for s in step.arg:
                         val = self.execute_step(s, env, static)
                         if self.ret == True:
                             return val
+            elif step.action == 'cast':
+                if step.arg == 'int':
+                    return int(self.execute_step(step.var0, scope, static))
+                elif step.arg == 'Integer':
+                    return self.execute_step(Step('new', 'Integer', [Value(int(self.execute_step(step.var0, scope, static)), 'int')]), scope, static)
+                elif step.arg == 'double':
+                    return float(self.execute_step(step.var0, scope, static))
+                elif step.arg == 'Double':
+                    return self.execute_step(Step('new', 'Double', [Value(float(self.execute_step(step.var0, scope, static)), 'double')]), scope, static)
+                elif step.arg == 'boolean':
+                    return bool(self.execute_step(step.var0, scope, static))
+                elif step.arg == 'Boolean':
+                    return self.execute_step(Step('new', 'Boolean', [Value(bool(self.execute_step(step.var0, scope, static)), 'boolean')]), scope, static)
+                elif step.arg == 'char':
+                    return str(self.execute_step(step.var0, scope, static))[0]
+                elif step.arg == 'Character':
+                    return self.execute_step(Step('new', 'Character', [Value(str(self.execute_step(step.var0, scope, static))[0], 'char')]), scope, static)
+                elif step.arg == 'String':
+                    return self.execute_step(Step('new', 'String', [Value(str(self.execute_step(step.var0, scope, static)), 'String')]), scope, static)
+            elif step.action == 'length':
+                return len(self.execute_step(step.var0, scope, static))
+            elif step.action == 'substring':
+                string = str(self.execute_step(step.var0, scope, static))[1:-1]
+                start = int(self.execute_step(step.arg, scope, static))
+                end = int(self.execute_step(step.var1, scope, static))
+                return self.execute_step(Step('new', 'String', [Value(string[start:end], 'String')]), scope, static)
         return step
 
     def execute_method(self, method, params, upper, static):
@@ -212,7 +247,7 @@ class Executor():
 
             val = self.execute_step(step, scope, method.static)
             if self.ret == True:
-                if method.name.name == self.program.name:
+                if method.name.name == self.program.type:
                     raise GeneratorExit(f"Attempted to return out of constructor")
                 self.ret = False
                 return val

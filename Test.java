@@ -9,6 +9,6 @@ public class Test {
   public static void main() {
     Test t = new Test();
     t.str = new String("good bye world");
-    System.out.println(t.str);
+    System.out.println(t.str.charAt(3));
   }
 }

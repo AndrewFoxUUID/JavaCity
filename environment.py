@@ -17,30 +17,30 @@ class Environment():
         return Environment(self.upper, variables)
 
     def define(self, var):
-        if type(var) == Step and var[0] == 'dot':
-            parent = self[var[1]]
+        if type(var) == Step and var.action == 'dot':
+            parent = self[var.var0]
             if type(parent) == Environment:
-                parent.define(var[2])
+                parent.define(var.arg)
             else:
                 try:
-                    parent.env[Variable('this')].define(var[2])
+                    parent.env[Variable('this')].define(var.arg)
                 except UnboundLocalError:
-                    parent.env.define(var[2])
+                    parent.env.define(var.arg)
         elif var not in self.vars:
             self.vars[var] = Value(None, var.type)
         else:
             raise NameError("Variable " + str(var) + " already defined in scope")
 
     def __setitem__(self, var, val):
-        if type(var) == Step and var[0] == 'dot':
-            parent = self[var[1]]
+        if type(var) == Step and var.action == 'dot':
+            parent = self[var.var0]
             if isinstance(parent, Environment):
-                parent[var[2]] = val
+                parent[var.arg] = val
             else:
                 try:
-                    parent.env[Variable('this')][var[2]] = val
+                    parent.env[Variable('this')][var.arg] = val
                 except UnboundLocalError:
-                    parent.env[var[2]] = val
+                    parent.env[var.arg] = val
         elif self.contains(var, False):
             if var.final and self.vars[var] != Value(None, "Object"):
                 raise TypeError(f"Cannot modify final variable {var.name}")
@@ -56,15 +56,15 @@ class Environment():
         else:
             var, params = args, None
 
-        if type(var) == Step and var[0] == 'dot':
-            parent = self[var[1]]
+        if type(var) == Step and var.action == 'dot':
+            parent = self[var.var0]
             if isinstance(parent, Environment):
-                return parent[var[2]]
+                return parent[var.arg]
             else:
                 try:
-                    return parent.env[Variable('this')][var[2]]
+                    return parent.env[Variable('this')][var.arg]
                 except UnboundLocalError:
-                    return parent.env[var[2]]
+                    return parent.env[var.arg]
         elif self.contains(var, False):
             if params is not None:
                 try:
@@ -121,7 +121,7 @@ javascope = {
                                 Variable('val', 'Object')
                             ],
                             [
-                                Step(['print', Variable('val')], 'Java Internal Method')
+                                Step('print', Variable('val'))
                             ],
                             True
                         )
@@ -133,15 +133,35 @@ javascope = {
     Variable('Integer', 'Object', True, True): Object(
         name='Integer',
         env=Environment(None, {
-            Variable('Integer', 'Integer', True, True): MethodSet('Integer').add(
+            Variable('Integer', 'Integer', True, True): MethodSet(Variable('Integer', 'Integer', True, True)).add(
                 Method(
                     Variable('Integer', 'Integer', True, True),
                     [
                         Variable('inner', 'int')
                     ],
                     [
-                        Step(['def', Step(['dot', Variable('this', 'Integer'), Variable('inner', 'int')], 'Java Internal Method')], 'Java Internal Method'),
-                        Step(['set', Step(['dot', Variable('this', 'Integer'), Variable('inner', 'int')], 'Java Internal Method'), Variable('inner', 'int')], 'Java Internal Method')
+                        Step('def', Step('dot', Variable('this', 'Integer'), Variable('inner', 'int'))),
+                        Step('set', Step('dot', Variable('this', 'Integer'), Variable('inner', 'int')), Variable('inner', 'int'))
+                    ]
+                )
+            ),
+            Variable('parseInt', 'int', True, True): MethodSet(Variable('parseInt', 'int', True, True)).add(
+                Method(
+                    Variable('parseInt', 'int', True, True),
+                    [
+                        Variable('val', 'Object')
+                    ],
+                    [
+                        Step('return', Step('cast', Variable('val', 'Object'), 'int'))
+                    ]
+                )
+            ),
+            Variable('toString', 'String', True, True): MethodSet(Variable('toString', 'String', True, True)).add(
+                Method(
+                    Variable('toString', 'String', True, True),
+                    [],
+                    [
+                        Step('return', Step('cast', Variable('inner', 'int'), 'String'))
                     ]
                 )
             )
@@ -150,15 +170,35 @@ javascope = {
     Variable('Double', 'Object', True, True): Object(
         name='Double',
         env=Environment(None, {
-            Variable('Double', 'Double', True, True): MethodSet('Double').add(
+            Variable('Double', 'Double', True, True): MethodSet(Variable('Double', 'Double', True, True)).add(
                 Method(
                     Variable('Double', 'Double', True, True),
                     [
                         Variable('inner', 'double')
                     ],
                     [
-                        Step(['def', Step(['dot', Variable('this', 'Double'), Variable('inner', 'double')], 'Java Internal Method')], 'Java Internal Method'),
-                        Step(['set', Step(['dot', Variable('this', 'Double'), Variable('inner', 'double')], 'Java Internal Method'), Variable('inner', 'double')], 'Java Internal Method')
+                        Step('def', Step('dot', Variable('this', 'Double'), Variable('inner', 'double'))),
+                        Step('set', Step('dot', Variable('this', 'Double'), Variable('inner', 'double')), Variable('inner', 'double'))
+                    ]
+                )
+            ),
+            Variable('parseDouble', 'double', True, True): MethodSet(Variable('parseDouble', 'double', True, True)).add(
+                Method(
+                    Variable('parseDouble', 'double', True, True),
+                    [
+                        Variable('val', 'Object')
+                    ],
+                    [
+                        Step('return', Step('cast', Variable('val', 'Object'), 'double'))
+                    ]
+                )
+            ),
+            Variable('toString', 'String', True, True): MethodSet(Variable('toString', 'String', True, True)).add(
+                Method(
+                    Variable('toString', 'String', True, True),
+                    [],
+                    [
+                        Step('return', Step('cast', Variable('inner', 'double'), 'String'))
                     ]
                 )
             )
@@ -167,15 +207,35 @@ javascope = {
     Variable('Boolean', 'Object', True, True): Object(
         name='Boolean',
         env=Environment(None, {
-            Variable('Boolean', 'Boolean', True, True): MethodSet('Boolean').add(
+            Variable('Boolean', 'Boolean', True, True): MethodSet(Variable('Boolean', 'Boolean', True, True)).add(
                 Method(
                     Variable('Boolean', 'Boolean', True, True),
                     [
                         Variable('inner', 'boolean')
                     ],
                     [
-                        Step(['def', Step(['dot', Variable('this', 'Boolean'), Variable('inner', 'boolean')], 'Java Internal Method')], 'Java Internal Method'),
-                        Step(['set', Step(['dot', Variable('this', 'Boolean'), Variable('inner', 'boolean')], 'Java Internal Method'), Variable('inner', 'boolean')], 'Java Internal Method')
+                        Step('def', Step('dot', Variable('this', 'Boolean'), Variable('inner', 'boolean'))),
+                        Step('set', Step('dot', Variable('this', 'Boolean'), Variable('inner', 'boolean')), Variable('inner', 'boolean'))
+                    ]
+                )
+            ),
+            Variable('parseBoolean', 'boolean', True, True): MethodSet(Variable('parseBoolean', 'boolean', True, True)).add(
+                Method(
+                    Variable('parseBoolean', 'boolean', True, True),
+                    [
+                        Variable('val', 'Object')
+                    ],
+                    [
+                        Step('return', Step('cast', Variable('val', 'Object'), 'boolean'))
+                    ]
+                )
+            ),
+            Variable('toString', 'String', True, True): MethodSet(Variable('toString', 'String', True, True)).add(
+                Method(
+                    Variable('toString', 'String', True, True),
+                    [],
+                    [
+                        Step('return', Step('cast', Variable('inner', 'boolean'), 'String'))
                     ]
                 )
             )
@@ -184,15 +244,24 @@ javascope = {
     Variable('Character', 'Object', True, True): Object(
         name='Character',
         env=Environment(None, {
-            Variable('Character', 'Character', True, True): MethodSet('Character').add(
+            Variable('Character', 'Character', True, True): MethodSet(Variable('Character', 'Character', True, True)).add(
                 Method(
                     Variable('Character', 'Character', True, True),
                     [
                         Variable('inner', 'char')
                     ],
                     [
-                        Step(['def', Step(['dot', Variable('this', 'Character'), Variable('inner', 'char')], 'Java Internal Method')], 'Java Internal Method'),
-                        Step(['set', Step(['dot', Variable('this', 'Character'), Variable('inner', 'char')], 'Java Internal Method'), Variable('inner', 'char')], 'Java Internal Method')
+                        Step('def', Step('dot', Variable('this', 'Character'), Variable('inner', 'char'))),
+                        Step('set', Step('dot', Variable('this', 'Character'), Variable('inner', 'char')), Variable('inner', 'char'))
+                    ]
+                )
+            ),
+            Variable('toString', 'String', True, True): MethodSet(Variable('toString', 'String', True, True)).add(
+                Method(
+                    Variable('toString', 'String', True, True),
+                    [],
+                    [
+                        Step('return', Step('cast', Variable('inner', 'char'), 'String'))
                     ]
                 )
             )
@@ -201,15 +270,56 @@ javascope = {
     Variable('String', 'Object', True, True): Object(
         name='String',
         env=Environment(None, {
-            Variable('String', 'String', True, True): MethodSet('String').add(
+            Variable('String', 'String', True, True): MethodSet(Variable('String', 'String', True, True)).add(
                 Method(
                     Variable('String', 'String', True, True),
                     [
                         Variable('inner', 'String')
                     ],
                     [
-                        Step(['def', Step(['dot', Variable('this', 'String'), Variable('inner', 'String')], 'Java Internal Method')], 'Java Internal Method'),
-                        Step(['set', Step(['dot', Variable('this', 'String'), Variable('inner', 'String')], 'Java Internal Method'), Variable('inner', 'String')], 'Java Internal Method')
+                        Step('def', Step('dot', Variable('this', 'String'), Variable('inner', 'String'))),
+                        Step('set', Step('dot', Variable('this', 'String'), Variable('inner', 'String')), Variable('inner', 'String'))
+                    ]
+                )
+            ),
+            Variable('charAt', 'char', False, True): MethodSet(Variable('charAt', 'char', False, True)).add(
+                Method(
+                    Variable('charAt', 'char', False, True),
+                    [
+                        Variable('index', 'int')
+                    ],
+                    [
+                        Step('return', Step('substring', Variable('inner', 'String'), Variable('index', 'int'), Step('eval', Variable('index', 'int'), '+', Value(1, 'int'))))
+                    ]
+                )
+            ),
+            Variable('substring', 'String', False, True): MethodSet(Variable('substring', 'String', False, True)).add(
+                Method(
+                    Variable('substring', 'String', False, True),
+                    [
+                        Variable('start', 'int')
+                    ],
+                    [
+                        Step('return', Step('substring', Variable('inner', 'String'), Variable('start', 'int'), Step('length', Variable('inner', 'String'))))
+                    ]
+                ),
+                Method(
+                    Variable('substring', 'String', False, True),
+                    [
+                        Variable('start', 'int'),
+                        Variable('end', 'int')
+                    ],
+                    [
+                        Step('return', Step('substring', Variable('inner', 'String'), Variable('start', 'int'), Variable('end', 'int')))
+                    ]
+                )
+            ),
+            Variable('length', 'int', False, True): MethodSet(Variable('length', 'int', False, True)).add(
+                Method(
+                    Variable('length', 'int', False, True),
+                    [],
+                    [
+                        Step('return', Step('length', Variable('inner', 'String')))
                     ]
                 )
             )

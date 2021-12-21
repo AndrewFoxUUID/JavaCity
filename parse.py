@@ -5,6 +5,7 @@ from variable import Variable
 from value import Value
 from program import Program
 from step import Step
+from method import Method
 
 class Parser():
 
@@ -43,12 +44,12 @@ class Parser():
                     if self.t.type != '( block closer':
                         self.eat(Token('operator', ','))
                 self.eat(Token('( block closer', ')'))
-                return Step(['exec', var, params], line)
+                return Step('exec', var, params, line=line)
             else:
                 if self.t.type == 'special operator':
                     operator = self.t.val
                     self.eat(self.t)
-                    return Step(['eval', var, operator, ''], line)
+                    return Step('eval', var, operator, line=line)
                 elif self.t == Token('operator', '.'):
                     vars = [var]
                     while self.t.val == '.':
@@ -66,22 +67,22 @@ class Parser():
                                     break
                             self.eat(Token('( block closer', ')'))
                             vars[-1] = (vars[-1], params)
-                    if type(vars[0]) == tuple: vars[0] = Step(['exec', vars[0][0], vars[0][1]])
-                    var = Step(['dot', vars[0], vars[1]], line)
+                    if type(vars[0]) == tuple: vars[0] = Step('exec', vars[0][0], vars[0][1], line=line)
+                    var = Step('dot', vars[0], vars[1], line=line)
                     if type(vars[1]) == tuple:
                         params = var[2][1]
                         var[2] = var[2][0]
-                        var = Step(['exec', var, params], line)
+                        var = Step('exec', var, params, line=line)
 
                     for v in vars[::-1][:-2]:
                         if type(v) == tuple:
-                            var = Step(['exec', Step(['dot', var, v[0]], line), v[1]], line)
+                            var = Step('exec', Step('dot', var, v[0], line=line), v[1], line=line)
                         else:
-                            var = Step(['dot', var, v], line)
+                            var = Step('dot', var, v, line=line)
                 return var
         elif self.t == Token('operator', '!'):
             self.eat(self.t)
-            return Step(['eval', '', 'not', self.parse1()], line)
+            return Step('eval', '', 'not', self.parse1(), line=line)
         elif self.t == Token('key word', 'new'):
             self.eat(self.t)
             objectName = self.t.val
@@ -93,7 +94,7 @@ class Parser():
                 if self.t.type != '( block closer':
                     self.eat(Token('operator', ','))
             self.eat(Token('( block closer', ')'))
-            return Step(['new', objectName, params], line)
+            return Step('new', objectName, params, line=line)
         else:
             if self.t.type == 'int':
                 val = Value(int(self.t.val), 'int')
@@ -104,7 +105,7 @@ class Parser():
             elif self.t.type == 'char':
                 val = Value(str(self.t.val)[1], 'char')
             elif self.t.type == 'String':
-                val = Value(str(self.t.val)[1:-1], 'String')
+                val = Step('new', 'String', [Value(str(self.t.val)[1:-1], 'String')])
             else:
                 val = Value(self.t.val, 'Object')
             self.eat(self.t)
@@ -119,7 +120,7 @@ class Parser():
         while self.t.type == 'operator' and self.t.val in ['*', '/', '%']:
             operator = self.t.val
             self.eat(self.t)
-            factor = Step(['eval', factor, operator, self.parse1()], line)
+            factor = Step('eval', factor, operator, self.parse1(), line=line)
         return factor
 
     def parse3(self): # additive operators
@@ -128,7 +129,7 @@ class Parser():
         while self.t.type == 'operator' and self.t.val in ['+', '-']:
             operator = self.t.val
             self.eat(self.t)
-            term = Step(['eval', term, operator, self.parse2()], line)
+            term = Step('eval', term, operator, self.parse2(), line=line)
         return term
 
     def parse4(self): # relational operators
@@ -137,7 +138,7 @@ class Parser():
         while self.t.type == 'operator' and self.t.val in ['<', '>', '<=', '>=']:
             operator = self.t.val
             self.eat(self.t)
-            term = Step(['eval', term, operator, self.parse3()], line)
+            term = Step('eval', term, operator, self.parse3(), line=line)
         return term
 
     def parse5(self): # equality operators
@@ -146,7 +147,7 @@ class Parser():
         while self.t.type == 'operator' and self.t.val in ['==', '!=']:
             operator = self.t.val
             self.eat(self.t)
-            term = Step(['eval', term, operator, self.parse4()], line)
+            term = Step('eval', term, operator, self.parse4(), line=line)
         return term
 
     def parse6(self): # and operator
@@ -154,7 +155,7 @@ class Parser():
         term = self.parse5()
         while self.t == Token('operator', '&&'):
             self.eat(self.t)
-            term = Step(['eval', term, 'and', self.parse5()], line)
+            term = Step('eval', term, 'and', self.parse5(), line=line)
         return term
 
     def parse7(self): # or operator
@@ -162,7 +163,7 @@ class Parser():
         term = self.parse6()
         while self.t == Token('operator', '||'):
             self.eat(self.t)
-            term = Step(['eval', term, 'or', self.parse6()], line)
+            term = Step('eval', term, 'or', self.parse6(), line=line)
         return term
 
     def parseBlock(self): # method/statement body
@@ -197,17 +198,17 @@ class Parser():
 
                         if self.t == Token('statement opener', 'else'):
                             self.eat(self.t)
-                            return [Step(['if', condition, body, [
-                                Step(['if', condition2, body2, self.parseBlock()], line)
-                            ]], line)]
+                            return [Step('if', condition, body, [
+                                Step('if', condition2, body2, self.parseBlock(), line=line)
+                            ], line=line)]
                         else:
-                            return [Step(['if', condition, body, [
-                                Step(['if', condition2, body2], line)
-                            ]], line)]
+                            return [Step('if', condition, body, [
+                                Step('if', condition2, body2, line=line)
+                            ], line=line)]
                     else:
-                        return [Step(['if', condition, body, self.parseBlock()], line)]
+                        return [Step('if', condition, body, self.parseBlock(), line=line)]
                 else:
-                    return [Step(['if', condition, body], line)]
+                    return [Step('if', condition, body, line=line)]
             elif statementType == 'for':
                 self.eat(Token('( block opener', '('))
                 itype = self.t.val
@@ -222,13 +223,13 @@ class Parser():
                 iadvancer = self.parse1()
                 self.eat(Token('( block closer', ')'))
                 body = self.parseBlock()
-                return [Step(['for', Variable(iname, itype), istartval, endcondition, iadvancer, body], line)]
+                return [Step('for', Variable(iname, itype), (istartval, endcondition, iadvancer), body, line=line)]
             elif statementType == 'while':
                 self.eat(Token('( block opener', '('))
                 condition = self.parse7()
                 self.eat(Token('( block closer', ')'))
                 body = self.parseBlock()
-                return [Step(['while', condition, body], line)]
+                return [Step('while', condition, body, line=line)]
             elif statementType == 'do':
                 body = self.parseBlock()
                 self.eat(Token('statement opener', 'while'))
@@ -236,18 +237,18 @@ class Parser():
                 condition = self.parse7()
                 self.eat(Token('( block closer', ')'))
                 self.eat(Token('operator', ';'))
-                return [*body, Step(['while', condition, body], line)]
+                return [*body, Step('while', condition, body, line=line)]
             else:
                 raise ValueError(f"Parsing Error: Invalid Token '{self.t}'")
         elif self.t == Token('key word', 'return'):
             self.eat(self.t)
             if self.t == Token('operator', ';'):
                 self.eat(self.t)
-                return [Step(['return', Value(None, 'Object')], line)]
+                return [Step('return', Value(None, 'Object'), line=line)]
             else:
                 val = self.parse7()
                 self.eat(Token('operator', ';'))
-                return [Step(['return', val], line)]
+                return [Step('return', val, line=line)]
         else:
             if self.t.type == 'access modifier':
                 self.eat(self.t)
@@ -274,18 +275,18 @@ class Parser():
                     
                 if self.t == Token('operator', ';'):
                     self.eat(self.t)
-                    return [Step(['def', Variable(varname, t1.val, static, final)], line)]
+                    return [Step('def', Variable(varname, t1.val, static, final), line=line)]
                 elif self.t.type == 'assignment operator':
                     operator = self.t.val
                     self.eat(self.t)
                     val = self.parse7()
                     self.eat(Token('operator', ';'))
                     var = Variable(varname, t1.val, static, final)
-                    steps = [Step(['def', var], line)]
+                    steps = [Step('def', var, line=line)]
                     if len(operator) == 1:
-                        steps.append(Step(['set', var, val], line))
+                        steps.append(Step('set', var, val, line=line))
                     else:
-                        steps.append(Step(['set', var, Step(['eval', var, operator[0], val], line)], line))
+                        steps.append(Step('set', var, Step('eval', var, operator[0], val, line=line), line=line))
                     return steps
                 elif self.t == Token('( block opener', '('):
                     self.eat(self.t)
@@ -301,7 +302,7 @@ class Parser():
                         else:
                             break
                     self.eat(Token('( block closer', ')'))
-                    return [Step(['defmethod', Variable(varname, t1.val, static, final), params, self.parseBlock(), static, final], line)]
+                    return [Step('defmethod', Method(Variable(varname, t1.val, static, final), params, self.parseBlock(), static, final), line=line)]
             
             t1 = self.parse1()
             if self.t.type == 'assignment operator': # assignment
@@ -310,12 +311,12 @@ class Parser():
                 val = self.parse7()
                 self.eat(Token('operator', ';'))
                 if len(operator) == 1:
-                    return [Step(['set', t1, val], line)]
+                    return [Step('set', t1, val, line=line)]
                 else:
-                    return [Step(['set', t1, Step(['eval', t1, operator[0], val], line)], line)]
+                    return [Step('set', t1, Step('eval', t1, operator[0], val, line=line), line=line)]
             else: # method call
                 self.eat(Token('operator', ';'))
-                return [Step(['exec', t1], line)]
+                return [Step('exec', t1, line=line)]
 
         raise SyntaxError(f"Could not parse Block, t={self.t}")
 
@@ -331,7 +332,7 @@ class Parser():
             
             steps = self.parseBlock()
 
-            steps.append(Step(['eof'], self.t.line))
+            steps.append(Step('eof', line=self.t.line))
 
             self.eat(Token('end of file', 'EOF'))
 

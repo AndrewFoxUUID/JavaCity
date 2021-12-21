@@ -29,9 +29,10 @@ class MethodSet():
         self.name = name
         self.methods = []
 
-    def add(self, method):
-        if method not in self:
-            self.methods.append(method)
+    def add(self, *methods):
+        for method in methods:
+            if method not in self:
+                self.methods.append(method)
         return self
 
     def __iter__(self):

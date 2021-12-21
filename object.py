@@ -14,6 +14,13 @@ class Object():
     def copy(self):
         return Object(self.type, self.env.copy())
 
+    def copyenv(self):
+        newenv = {}
+        for var in self.env:
+            if var.name != 'this':
+                newenv[var] = self.env[var]
+        return newenv
+
     def __str__(self):
         if self.type == "Integer":
             return str(self.env[Variable("this", "Integer")][Variable("inner", "int")])
@@ -30,6 +37,12 @@ class Object():
 
     def __getitem__(self, key):
         return self.env.__getitem__(key)
+
+    def __len__(self):
+        if self.type == "String":
+            return len(self.env[Variable("this", "String")][Variable("inner", "String")])
+        else:
+            raise TypeError(f"Cannot get length of {self.type}")
 
     def __bool__(self):
         if self.type == "Integer":

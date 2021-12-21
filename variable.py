@@ -13,4 +13,4 @@ class Variable():
         return self.name.__hash__()
 
     def __str__(self):
-        return "VAR_" + str(self.name) + "_" + str(self.type)
+        return str(self.name)
