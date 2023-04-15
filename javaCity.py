@@ -631,10 +631,10 @@ class JavaCity():
                 if self.program is not None: self.program.step()
             elif self.popupdialog is not None and self.continue_rect.collidepoint(pos):
                 self.popupdialog = None
-                self.program.executor.waiting = False
+                if self.program is not None: self.program.executor.waiting = False
             elif self.popupdialog is not None and self.exit_rect.collidepoint(pos):
                 self.popupdialog = None
-                self.program.executor.finished = True
+                if self.program is not None: self.program.executor.finished = True
                 self.message = "terminated"
 
     def mousebuttonup(self, pos, button):

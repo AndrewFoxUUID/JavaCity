@@ -3,9 +3,9 @@ The beautiful solution for your all of your Java Town problems<br>
 @version 0.2 (12/20/21)
 
 This simplified Java interpreter was built in pure Python using Pygame.
-In order to generate an application, run 
-`python3 setup.py bdist_mac` for mac (you might then have a codesign error, you will need to run `codesign --remove-signature JavaCity.app/Contents/MacOS/lib/Python`. if you do not have codesign, you will need to download the xcode cli dev kit)
-`python3 setup.py bdist_msi` for windows
+In order to generate an application, run<br>
+`python3 setup.py bdist_mac` for mac (you might then have a codesign error, you will need to run `codesign --remove-signature JavaCity.app/Contents/MacOS/lib/Python`. If you do not have codesign, you will need to download the xcode cli dev kit)<br>
+`python3 setup.py bdist_msi` for windows.<br>
 to generate a simple executable for any platform, run `python3 setup.py build`.
 An executable will be in the generated directory that you can run directly.
 everything will be created in the "build/" directory
